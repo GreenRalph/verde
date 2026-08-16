@@ -1,9 +1,8 @@
 // VER-DÉ — verify a Founding Access token against the signed PayPal order.
 const crypto = require('crypto');
-
 async function getAccessToken() {
-  var id = process.env.PAYPAL_CLIENT_ID;
-  var secret = process.env.PAYPAL_CLIENT_SECRET;
+  var id = (process.env.PAYPAL_CLIENT_ID || '').trim();
+  var secret = (process.env.PAYPAL_CLIENT_SECRET || '').trim();
   if (!id || !secret) throw new Error('PayPal credentials are not configured.');
   var auth = Buffer.from(id + ':' + secret).toString('base64');
   var r = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
@@ -14,13 +13,11 @@ async function getAccessToken() {
   if (!r.ok) throw new Error('PayPal authentication failed.');
   return (await r.json()).access_token;
 }
-
 function safeEqual(a, b) {
   var aa = Buffer.from(a || '');
   var bb = Buffer.from(b || '');
   return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
 }
-
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -28,11 +25,10 @@ module.exports = async function handler(req, res) {
     var token = String(req.query && req.query.token || '').trim();
     var parts = token.split('.');
     if (parts.length !== 2 || !/^[A-Z0-9]+$/.test(parts[0])) return res.status(401).json({ valid: false });
-
     var orderId = parts[0];
-    var expected = crypto.createHmac('sha256', process.env.PAYPAL_CLIENT_SECRET).update(orderId).digest('base64url');
+    var signingSecret = (process.env.PAYPAL_CLIENT_SECRET || '').trim();
+    var expected = crypto.createHmac('sha256', signingSecret).update(orderId).digest('base64url');
     if (!safeEqual(parts[1], expected)) return res.status(401).json({ valid: false });
-
     var accessToken = await getAccessToken();
     var r = await fetch('https://api-m.paypal.com/v2/checkout/orders/' + encodeURIComponent(orderId), {
       headers: { Authorization: 'Bearer ' + accessToken }
