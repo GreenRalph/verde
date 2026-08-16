@@ -846,6 +846,11 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
 .video-description{font:18px/1.45 var(--body);color:var(--bone);max-width:72ch}
 .video-award{margin-top:9px;color:var(--verdigris-lit);font:9px var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .video-award::before{content:"✦  "}
+
+.maker-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.maker-links a{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--verdigris);border:1px solid var(--dim);padding:8px 12px;text-decoration:none;transition:border-color .2s,color .2s}
+.maker-links a:hover{color:var(--verdigris-lit);border-color:var(--verdigris)}
+.owner-flag{position:fixed;left:12px;bottom:12px;z-index:9999;font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--void);background:var(--verdigris-lit);padding:6px 10px}
 </style>
 </head>
 <body>
@@ -1022,7 +1027,14 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
 <div class="maker-credentials">
 <span>GAIC 2026 Top 10</span>
 <span>AIMV 2026 Excellent Finalist</span>
-<span>CapCut Creator Partner</span>
+<span>CapCut Creative Partner</span>
+</div>
+<div class="maker-links">
+<a href="https://www.facebook.com/greenralph" target="_blank" rel="noopener">Facebook</a>
+<a href="https://www.youtube.com/@greenralph" target="_blank" rel="noopener">YouTube</a>
+<a href="https://open.spotify.com/artist/REPLACE_SPOTIFY_ID" target="_blank" rel="noopener">Spotify</a>
+<a href="https://music.apple.com/artist/REPLACE_APPLE_ID" target="_blank" rel="noopener">Apple Music</a>
+<a href="https://music.youtube.com/channel/REPLACE_YTMUSIC_ID" target="_blank" rel="noopener">YouTube Music</a>
 </div>
 </div>
 </div>
@@ -1527,6 +1539,44 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
       }
     });
   });
+})();
+</script>
+<script>
+/* ============================================================
+   OWNER PREVIEW — lets the maker watch locked titles without paying.
+   Visit:  https://ver-de.com/?owner=verde39
+   Change OWNER_KEY below to whatever you like. Keep it private.
+   Visitors without the key see the locked catalog exactly as before.
+   ============================================================ */
+(function(){
+  var OWNER_KEY = 'verde39';
+  try{
+    var q = new URLSearchParams(window.location.search);
+    if(q.get('owner') !== OWNER_KEY) return;
+
+    document.querySelectorAll('.catalog-thumb[data-locked]').forEach(function(btn){
+      var img = btn.querySelector('img');
+      if(!img) return;
+      var m = img.getAttribute('src').match(/\/vi\/([A-Za-z0-9_-]{6,})\//);
+      if(!m) return;
+      btn.dataset.video = 'https://www.youtube-nocookie.com/embed/' + m[1];
+      if(btn.classList.contains('archive-thumb')) btn.dataset.playlist = 'true';
+      btn.removeAttribute('data-locked');
+      var note = btn.querySelector('.lock-note');
+      if(note) note.textContent = 'Owner preview →';
+      var badge = btn.querySelector('.thumb-badge');
+      if(badge) badge.textContent = 'Owner preview';
+    });
+
+    document.querySelectorAll('.vertical-link[data-locked], .text-watch[data-locked]').forEach(function(a){
+      a.removeAttribute('data-locked');
+    });
+
+    var flag = document.createElement('div');
+    flag.className = 'owner-flag';
+    flag.textContent = 'Owner preview mode';
+    document.body.appendChild(flag);
+  }catch(e){}
 })();
 </script>
 </body>
