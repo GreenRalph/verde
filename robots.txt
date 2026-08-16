@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ver-de.com/sitemap.xml
