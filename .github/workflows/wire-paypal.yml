@@ -13,11 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Wire checkout into existing button
+      - name: Wire PayPal script into existing page
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
 
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
@@ -29,135 +28,17 @@ jobs:
           if end == -1:
               raise SystemExit('PayPal placeholder script end not found; refusing to modify index.html.')
           end += len('</script>')
+          s = s[:start] + s[end:]
+          if '<script src="/paypal.js"></script>' not in s:
+              s = s.replace('</body>', '<script src="/paypal.js"></script>\n</body>', 1)
+          p.write_text(s, encoding='utf-8')
 
-          replacement = r'''  // PayPal / card checkout — order and capture happen on the server.
-  (function(){
-    var buy = document.getElementById('buy');
-    if(!buy) return;
-
-    function unlockFounderAccess(token){
-      localStorage.setItem('verde_founder_access', token);
-      document.querySelectorAll('.catalog-thumb[data-locked]').forEach(function(btn){
-        btn.removeAttribute('data-locked');
-        btn.querySelectorAll('.thumb-badge,.lock-note').forEach(function(el){ el.remove(); });
-        var title = btn.getAttribute('data-title') || 'film';
-        btn.setAttribute('aria-label', title);
-      });
-      document.querySelectorAll('.vertical-link[data-locked], .text-watch[data-locked]').forEach(function(a){
-        a.removeAttribute('data-locked');
-      });
-    }
-
-    async function verifyToken(token){
-      try{
-        var r = await fetch('/api/paypal-verify?token=' + encodeURIComponent(token), {cache:'no-store'});
-        if(!r.ok) return false;
-        var data = await r.json();
-        if(data.valid) unlockFounderAccess(token);
-        return Boolean(data.valid);
-      }catch(e){ return false; }
-    }
-
-    (async function(){
-      var q = new URLSearchParams(window.location.search);
-      var token = q.get('access') || localStorage.getItem('verde_founder_access');
-      if(!token) return;
-      var ok = await verifyToken(token);
-      if(ok && q.has('access')){
-        q.delete('access');
-        var clean = window.location.pathname + (q.toString() ? '?' + q.toString() : '') + window.location.hash;
-        history.replaceState({}, document.title, clean);
-      }
-    })();
-
-    buy.addEventListener('click', async function(){
-      if(document.getElementById('paypalMount')) return;
-      buy.disabled = true;
-      buy.textContent = 'Loading payment…';
-
-      var mount = document.createElement('div');
-      mount.id = 'paypalMount';
-      mount.style.maxWidth = '420px';
-      mount.style.marginTop = '14px';
-      buy.parentNode.insertBefore(mount, buy);
-      buy.style.display = 'none';
-
-      try{
-        var cr = await fetch('/api/paypal-client', {cache:'no-store'});
-        var cd = await cr.json();
-        if(!cr.ok || !cd.clientId) throw new Error('PayPal is not configured.');
-
-        await new Promise(function(resolve, reject){
-          var sc = document.createElement('script');
-          sc.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cd.clientId) + '&currency=USD&components=buttons&enable-funding=card';
-          sc.onload = resolve;
-          sc.onerror = reject;
-          document.head.appendChild(sc);
-        });
-
-        await paypal.Buttons({
-          style: { layout:'vertical', shape:'rect', label:'paypal' },
-          createOrder: function(){
-            return fetch('/api/paypal-order', {method:'POST'})
-              .then(function(r){ return r.json(); })
-              .then(function(data){
-                if(!data.id) throw new Error(data.error || 'Could not start PayPal checkout.');
-                return data.id;
-              });
-          },
-          onApprove: function(data){
-            return fetch('/api/paypal-capture', {
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({orderID:data.orderID})
-            }).then(function(r){ return r.json().then(function(body){ return {ok:r.ok,body:body}; }); })
-              .then(function(result){
-                if(!result.ok || !result.body.accessToken) throw new Error(result.body.error || 'Payment could not be verified.');
-                var token = result.body.accessToken;
-                unlockFounderAccess(token);
-                var url = new URL(window.location.href);
-                url.searchParams.set('access', token);
-                window.location.href = url.toString();
-              });
-          },
-          onCancel: function(){
-            buy.style.display = '';
-            buy.disabled = false;
-            buy.textContent = 'Get lifetime access';
-            mount.remove();
-          },
-          onError: function(err){
-            console.error(err);
-            buy.style.display = '';
-            buy.disabled = false;
-            buy.textContent = 'Get lifetime access';
-            mount.remove();
-            alert('PayPal checkout could not be completed. Please try again.');
-          }
-        }).render('#paypalMount');
-      }catch(err){
-        console.error(err);
-        buy.style.display = '';
-        buy.disabled = false;
-        buy.textContent = 'Get lifetime access';
-        mount.remove();
-        alert('PayPal checkout is unavailable right now.');
-      }
-    });
-  })();
-</script>'''
-
-          p.write_text(s[:start] + replacement + s[end:], encoding='utf-8')
-
-          # Keep the Gemini payment instructions accurate after this checkout change.
           a = Path('api/ask.js')
           t = a.read_text(encoding='utf-8')
-          t2 = t.replace(
-              'HOW TO PAY:\\nPayPal or card, billed at $7. Or Philippine QR payment of P399 via BDO InstaPay, GCash, Maya, or any Philippine bank app. Payment is verified manually: after paying, the visitor clicks the star circle at the bottom right of the page and submits their name and payment reference number. Access is not issued automatically.',
-              'HOW TO PAY:\\nPayPal or card, billed at $7 through the site checkout. Successful PayPal/card payment unlocks Founding Access automatically. Philippine QR payment is P399 via BDO InstaPay, GCash, Maya, or any Philippine bank app; that route remains manual: after paying, the visitor clicks the star circle at the bottom right of the page and submits their name and payment reference number.'
-          )
-          if t2 != t:
-              a.write_text(t2, encoding='utf-8')
+          old = 'HOW TO PAY:\\nPayPal or card, billed at $7. Or Philippine QR payment of P399 via BDO InstaPay, GCash, Maya, or any Philippine bank app. Payment is verified manually: after paying, the visitor clicks the star circle at the bottom right of the page and submits their name and payment reference number. Access is not issued automatically.'
+          new = 'HOW TO PAY:\\nPayPal or card, billed at $7 through the site checkout. Successful PayPal/card payment unlocks Founding Access automatically. Philippine QR payment is P399 via BDO InstaPay, GCash, Maya, or any Philippine bank app; that route remains manual: after paying, the visitor clicks the star circle at the bottom right of the page and submits their name and payment reference number.'
+          if old in t:
+              a.write_text(t.replace(old, new), encoding='utf-8')
           PY
       - name: Commit patched files
         run: |
