@@ -17,8 +17,8 @@ function readBody(req) {
 }
 
 async function getAccessToken() {
-  var id = process.env.PAYPAL_CLIENT_ID;
-  var secret = process.env.PAYPAL_CLIENT_SECRET;
+  var id = (process.env.PAYPAL_CLIENT_ID || '').trim();
+  var secret = (process.env.PAYPAL_CLIENT_SECRET || '').trim();
   if (!id || !secret) throw new Error('PayPal credentials are not configured.');
 
   var auth = Buffer.from(id + ':' + secret).toString('base64');
