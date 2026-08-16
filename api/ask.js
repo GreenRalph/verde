@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
   }
 
   if (!KEY) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY is not set' });
+    return res.status(500).json({ error: 'API key is not set' });
   }
 
   try {
@@ -46,18 +46,19 @@ module.exports = async (req, res) => {
       'If you do not know something, say so plainly and suggest the visitor message the filmmaker.'
     ].join(' ');
 
-    const prompt = system +
+    const input = system +
       (context ? '\n\nCatalog context:\n' + context : '') +
       '\n\nVisitor question: ' + question;
 
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + KEY;
-
-    const r = await fetch(url, {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': KEY
+      },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
+        model: 'gemini-3.6-flash',
+        input: input
       })
     });
 
@@ -69,13 +70,32 @@ module.exports = async (req, res) => {
     }
 
     let text = '';
-    const candidate = data && data.candidates && data.candidates[0];
-    if (candidate && candidate.content && Array.isArray(candidate.content.parts)) {
-      text = candidate.content.parts.map(function (p) { return p.text || ''; }).join('').trim();
+
+    if (typeof data.output_text === 'string') {
+      text = data.output_text.trim();
+    }
+
+    if (!text && Array.isArray(data.steps)) {
+      const parts = [];
+      data.steps.forEach(function (step) {
+        if (step && Array.isArray(step.content)) {
+          step.content.forEach(function (item) {
+            if (item && typeof item.text === 'string') { parts.push(item.text); }
+          });
+        }
+      });
+      text = parts.join('').trim();
+    }
+
+    if (!text && data.candidates && data.candidates[0] && data.candidates[0].content) {
+      const cparts = data.candidates[0].content.parts;
+      if (Array.isArray(cparts)) {
+        text = cparts.map(function (p) { return p.text || ''; }).join('').trim();
+      }
     }
 
     if (!text) {
-      return res.status(502).json({ error: 'Empty response from Gemini' });
+      return res.status(502).json({ error: 'Empty response from Gemini', detail: JSON.stringify(data).slice(0, 500) });
     }
 
     return res.status(200).json({ answer: text });
