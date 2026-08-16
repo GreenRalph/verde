@@ -1302,18 +1302,7 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
     document.addEventListener('keydown',function(e){if(e.key==='Escape') hide();});
   })();
 
-  // Replace with the live PayMongo checkout link before deploy.
-  /* ============================================================
-     PASTE YOUR PAYPAL LINK BETWEEN THE QUOTES BELOW.
-     PayPal -> Pay & Get Paid -> PayPal Buttons -> Buy Now.
-     Looks like: https://www.paypal.com/ncp/payment/XXXXXXXX
-     ============================================================ */
-  var PAYPAL_LINK = "https://www.paypal.com/ncp/payment/TQY2JM39JTPZA";
-  document.getElementById('buy').addEventListener('click', function(){
-    if (PAYPAL_LINK) { window.location.href = PAYPAL_LINK; }
-    else { alert("Paste your PayPal link into PAYPAL_LINK at the bottom of index.html."); }
-  });
-</script>
+
 <div aria-hidden="true" class="film-viewer" id="filmViewer">
 <div class="viewer-box">
 <button aria-label="Close video" class="viewer-close" id="viewerClose">×</button>
@@ -1707,5 +1696,6 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
   }catch(e){}
 })();
 </script>
+<script src="/paypal.js"></script>
 </body>
 </html>
