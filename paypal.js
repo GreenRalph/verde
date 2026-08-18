@@ -1,27 +1,55 @@
-// VER-DÉ — PayPal / card Founding Access checkout
 (function(){
   var buy = document.getElementById('buy');
-  if(!buy) return;
 
-  function unlockFounderAccess(token){
-    localStorage.setItem('verde_founder_access', token);
-    document.querySelectorAll('.catalog-thumb[data-locked]').forEach(function(btn){
-      btn.removeAttribute('data-locked');
-      btn.querySelectorAll('.thumb-badge,.lock-note').forEach(function(el){ el.remove(); });
-      btn.setAttribute('aria-label', btn.getAttribute('data-title') || 'film');
+  function normTitle(s){
+    return String(s || '')
+      .replace(/[\u2010-\u2015\u2212]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function applyFilms(films){
+    var byTitle = {};
+    Object.keys(films || {}).forEach(function(k){ byTitle[normTitle(k)] = films[k]; });
+
+    document.querySelectorAll('[data-locked]').forEach(function(el){
+      var entry = byTitle[normTitle(el.getAttribute('data-title'))];
+      if(!entry){
+        console.warn('VER-DÉ: no manifest entry for', el.getAttribute('data-title'));
+        return;
+      }
+      if(entry.type === 'rail'){
+        el.dataset.rail = entry.rail === 'movements' ? 'movements' : '';
+        if(entry.rail === 'episodes') el.dataset.playlist = 'true';
+        window.VERDE_RAILS = window.VERDE_RAILS || {};
+        window.VERDE_RAILS[entry.rail] = entry.items;
+      } else {
+        el.dataset.video = 'https://www.youtube-nocookie.com/embed/' + entry.id;
+        if(entry.vertical) el.dataset.vertical = 'true';
+      }
+      el.removeAttribute('data-locked');
+      el.querySelectorAll('.thumb-badge,.lock-note').forEach(function(x){ x.remove(); });
+      var gp = el.querySelector('.gate-panel');
+      if(gp) gp.remove();
+      if(el.classList.contains('catalog-thumb')){
+        el.setAttribute('aria-label', el.getAttribute('data-title') || 'film');
+      }
     });
-    document.querySelectorAll('.vertical-link[data-locked], .text-watch[data-locked]').forEach(function(a){
-      a.removeAttribute('data-locked');
-    });
+  }
+
+  function unlockFounderAccess(token, films){
+    if(token) localStorage.setItem('verde_founder_access', token);
+    applyFilms(films);
   }
 
   async function verifyToken(token){
     try{
-      var r = await fetch('/api/paypal-verify?token=' + encodeURIComponent(token), {cache:'no-store'});
+      var r = await fetch('/api/films?token=' + encodeURIComponent(token), {cache:'no-store'});
       if(!r.ok) return false;
       var data = await r.json();
-      if(data.valid) unlockFounderAccess(token);
-      return Boolean(data.valid);
+      if(data.valid && data.films){ unlockFounderAccess(token, data.films); return true; }
+      return false;
     }catch(e){ return false; }
   }
 
@@ -36,6 +64,8 @@
       history.replaceState({}, document.title, clean);
     }
   })();
+
+  if(!buy) return;
 
   buy.addEventListener('click', async function(){
     if(document.getElementById('paypalMount')) return;
@@ -81,7 +111,7 @@
             .then(function(result){
               if(!result.ok || !result.body.accessToken) throw new Error(result.body.error || 'Payment could not be verified.');
               var token = result.body.accessToken;
-              unlockFounderAccess(token);
+              localStorage.setItem('verde_founder_access', token);
               var url = new URL(window.location.href);
               url.searchParams.set('access', token);
               window.location.href = url.toString();
