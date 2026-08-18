@@ -1414,10 +1414,88 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
     box.classList.remove('series');
     frameWrap.classList.remove('vertical');
   }
+   /* Founding Access gate — styles injected once */
+  (function(){
+    var css = document.createElement('style');
+    css.textContent =
+      '#filmViewer .viewer-frame-wrap.gated{background:#0b0b0b;display:flex;align-items:center;justify-content:center;}'+
+      '.gate-panel{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;'+
+        'padding:22px 20px 26px;box-sizing:border-box;text-align:left;'+
+        'background:linear-gradient(to top,rgba(0,0,0,.94) 0%,rgba(0,0,0,.82) 45%,rgba(0,0,0,.35) 100%);}'+
+      '.gate-panel .gate-poster{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.45;z-index:-1;}'+
+      '.gate-panel .gate-award{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#c9b27a;margin-bottom:8px;}'+
+      '.gate-panel h3{font-size:20px;line-height:1.25;margin:0 0 8px;color:#fff;}'+
+      '.gate-panel p{font-size:14px;line-height:1.6;margin:0 0 18px;color:rgba(255,255,255,.78);max-width:46ch;}'+
+      '.gate-cta{display:inline-block;width:100%;max-width:340px;padding:15px 18px;border:0;border-radius:6px;'+
+        'background:#fff;color:#0b0b0b;font-size:15px;font-weight:600;cursor:pointer;text-align:center;}'+
+      '.gate-cta:active{transform:translateY(1px);}'+
+      '.gate-sub{font-size:12.5px;color:rgba(255,255,255,.55);margin:12px 0 0;}'+
+      '@media(min-width:760px){.gate-panel{padding:34px 36px 38px;}.gate-panel h3{font-size:26px;}}';
+    document.head.appendChild(css);
+  })();
+
+  function openGate(el){
+    var img = el.querySelector('img');
+    var wrap = document.createElement('div');
+    wrap.className = 'gate-panel';
+
+    var poster = document.createElement('div');
+    poster.className = 'gate-poster';
+    if(img && img.getAttribute('src')) poster.style.backgroundImage = 'url("'+img.getAttribute('src')+'")';
+    wrap.appendChild(poster);
+
+    var award = (el.dataset.award || '').trim();
+    if(award){
+      var a = document.createElement('div');
+      a.className = 'gate-award';
+      a.textContent = award;
+      wrap.appendChild(a);
+    }
+
+    var h = document.createElement('h3');
+    h.textContent = el.dataset.title || 'Founding Access';
+    wrap.appendChild(h);
+
+    var desc = (el.dataset.description || '').trim();
+    if(desc){
+      var p = document.createElement('p');
+      p.textContent = desc;
+      wrap.appendChild(p);
+    }
+
+    var cta = document.createElement('button');
+    cta.type = 'button';
+    cta.className = 'gate-cta';
+    cta.textContent = 'Unlock all nine films — ₱399 / $7';
+    cta.addEventListener('click', function(){
+      closeViewer();
+      var offer = document.getElementById('offer');
+      if(offer) offer.scrollIntoView({behavior:'smooth'});
+      var buy = document.getElementById('buy');
+      if(buy) setTimeout(function(){ buy.click(); }, 650);
+    });
+    wrap.appendChild(cta);
+
+    var sub = document.createElement('p');
+    sub.className = 'gate-sub';
+    sub.textContent = 'One payment. Lifetime access. No subscription.';
+    wrap.appendChild(sub);
+
+    frame.src = '';
+    box.classList.remove('series');
+    frameWrap.classList.add('vertical','gated');
+    var old = frameWrap.querySelector('.gate-panel');
+    if(old) old.remove();
+    frameWrap.appendChild(wrap);
+    title.textContent = el.dataset.title || '';
+    viewer.classList.add('open');
+    viewer.setAttribute('aria-hidden','false');
+  }
+
   document.querySelectorAll('.catalog-thumb').forEach(function(btn){
     btn.addEventListener('click',function(){
-      if(btn.hasAttribute('data-locked') || !btn.dataset.video){
-        document.getElementById('offer').scrollIntoView({behavior:'smooth'});
+      if(btn.hasAttribute('data-locked') || (!btn.dataset.video && !btn.dataset.playlist && !btn.dataset.rail)){
+        openGate(btn);
         return;
       }
       openViewer(
@@ -1427,16 +1505,20 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
       );
     });
   });
+
   document.querySelectorAll('.vertical-link, .text-watch').forEach(function(a){
     a.addEventListener('click',function(e){
       e.preventDefault();
       if(a.dataset.locked){
-        document.getElementById('offer').scrollIntoView({behavior:'smooth'});
+        openGate(a);
         return;
       }
       openViewer(a.dataset.video,a.dataset.title,{vertical: a.classList.contains('vertical-link') || a.dataset.vertical === 'true'});
     });
   });
+
+/* ---------- END OF REPLACEMENT ---------- */
+
   var expandBtn=document.getElementById('viewerExpand');
   if(expandBtn){
     expandBtn.addEventListener('click',function(){
