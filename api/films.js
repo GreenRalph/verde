@@ -3,15 +3,15 @@ const crypto = require('crypto');
 
 /* ============================================================
    THE PAID CATALOGUE.
-   Five entries below say REPLACE_ME — put the YouTube video ID
-   there (the part after youtu.be/ or v=). Nothing else to change.
+   All eighteen film IDs are filled in. Add new titles here as they
+   are released — nothing else needs to change.
    ============================================================ */
 const FILMS = {
-  'PROJECT 39: REBUILD':                        { type: 'single', id: 'REPLACE_ME' },
-  'THE STORM ANSWERS':                          { type: 'single', id: 'REPLACE_ME' },
-  'MARAMING KAMAY':                             { type: 'single', id: 'REPLACE_ME' },
-  'THE WILDERNESS — 16:9 original':             { type: 'single', id: 'REPLACE_ME' },
-  'PROOF OF PRESENCE':                          { type: 'single', id: 'REPLACE_ME' },
+  'PROJECT 39: REBUILD':                        { type: 'single', id: 'yBTwnDkEcOc' },
+  'THE STORM ANSWERS':                          { type: 'single', id: '55-tFh4IAzA' },
+  'MARAMING KAMAY':                             { type: 'single', id: 'zdYKfAKUkPg' },
+  'THE WILDERNESS — 16:9 original':             { type: 'single', id: 'WOD2cUUMFuQ' },
+  'PROOF OF PRESENCE':                          { type: 'single', id: 'H_jKj8FZq10' },
   'THE WILDERNESS — 9:16 vertical':             { type: 'single', id: 'yIreldc7cIA', vertical: true },
   'PROJECT 39: FOUR MOVEMENTS':                 { type: 'rail', rail: 'movements', items: [
     { no: 'I',   id: 'pydgg2xGePo', name: 'THE FALL' },
