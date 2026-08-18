@@ -1329,34 +1329,25 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
      no    = episode number shown in the rail
      name  = episode title
      ============================================================ */
-  const PROJECT39_EPISODES = [
-    {no:'35', id:'ULYcM3dFzcw', name:'BUHAY'},
-    {no:'34', id:'P5OtJTIG0ks', name:'BALIK'},
-    {no:'33', id:'Ge2qq4j-f00', name:'A FILM THAT NEVER HAPPENED'},
-    {no:'32', id:'i6G54cSTQMw', name:'WHAT THE FIELD GIVES'},
-    {no:'31', id:'89CfeisPhlc', name:'REBUILD // BODY'},
-    {no:'30', id:'rTMsH0Q7J5w', name:'ONE MORE LOAD'},
-    {no:'29', id:'MvoThE55rcQ', name:'ANOTHER LAYER'},
-    {no:'28', id:'SqZV6giZwng', name:'THE COMPOST PIT'}
-  ];
+ /* ---------- PASTE THIS OVER LINES 1327 – 1354 ---------- */
 
-  /* ============================================================
-     PROJECT 39: FOUR MOVEMENTS — the four OST videos.
-     id   = the YouTube video ID (the part after youtu.be/ or v=)
-     no   = movement number shown in the rail
-     name = the song title
-     Leave every id blank and the card falls back to the 6:59 cut.
-     ============================================================ */
-  const FOUR_MOVEMENTS = [
-    {no:'I',   id:'pydgg2xGePo', name:'THE FALL'},
-    {no:'II',  id:'xE8u1qrew_k', name:'PURGATORY'},
-    {no:'III', id:'wnhfy1LG2wA', name:'THE FARM'},
-    {no:'IV',  id:'Ed5Z-15TfYY', name:'THE RESTAURANT'}
-  ];
+  /* Episode and movement lists now come from the server, released
+     only after a verified Founding Access token. Nothing here. */
+  var PROJECT39_EPISODES = [];
+  var FOUR_MOVEMENTS = [];
+
+  function railList(kind){
+    var r = window.VERDE_RAILS || {};
+    var list = kind === 'movements' ? (r.movements || FOUR_MOVEMENTS)
+                                    : (r.episodes  || PROJECT39_EPISODES);
+    return list || [];
+  }
 
   function playUrl(id){
     return 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1';
   }
+
+/* ---------- END ---------- */
 
   const railHead = document.querySelector('.ep-rail-head');
 
@@ -1381,7 +1372,7 @@ footer{padding:56px 0 44px;border-top:1px solid var(--dim)}
 
   function openViewer(url,name,opts){
     opts = opts || {};
-    const list    = opts.rail === 'movements' ? FOUR_MOVEMENTS : PROJECT39_EPISODES;
+        const list    = railList(opts.rail === 'movements' ? 'movements' : 'episodes');
     const heading = opts.rail === 'movements' ? 'Four Movements' : 'Project 39 — Episodes';
     const label   = opts.rail === 'movements' ? 'FOUR MOVEMENTS —' : 'PROJECT 39 — EP.';
     const haveEps = list.some(function(e){return e.id});
